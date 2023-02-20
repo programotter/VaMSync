@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using Buttplug.Core;
 using Buttplug.Client;
 using Buttplug.Client.Connectors.WebsocketConnector;
+using Buttplug.Core.Messages;
 
 namespace VaMLaunchGUI
 {
@@ -250,6 +251,8 @@ namespace VaMLaunchGUI
             {
                 try
                 {
+                    Console.WriteLine(aArgs.Device.Name);
+                    Console.WriteLine(aArgs.Device.GenericAcutatorAttributes(ActuatorType.Rotate).Count.ToString());
                     DevicesList.Add(new CheckedListItem(aArgs.Device));
                 }
                 catch (Exception ex)
@@ -289,9 +292,9 @@ namespace VaMLaunchGUI
         {
             foreach (var deviceItem in DevicesList)
             {
-                if (deviceItem.IsChecked && deviceItem.Device.RotateAttributes.Count > 0)
+                if (deviceItem.IsChecked && deviceItem.Device.GenericAcutatorAttributes(ActuatorType.Rotate).Count > 0)
                 {
-                    await deviceItem.Device.RotateAsync(aSpeed, new Random().Next(2) == 1);
+                    await deviceItem.Device.ScalarAsync(new ScalarCmd.ScalarSubcommand(0, aSpeed, ActuatorType.Rotate));
                 }
             }
         }
