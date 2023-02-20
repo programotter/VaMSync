@@ -59,10 +59,13 @@ namespace VaMLaunchGUI
                 if (e.Speed <= 20)
                 {
                     await _intifaceTab.StopVibration();
+                    await _intifaceTab.StopRotation();
                 }
                 else
                 {
-                    await _intifaceTab.Vibrate((double)(e.Position / 100.0 * (e.Speed / 100.0)));
+                    var strength = (double)(e.Position / 100.0 * (e.Speed / 100.0));
+                    await _intifaceTab.Vibrate(strength);
+                    await _intifaceTab.Rotate(strength);
                 }
                 
                 await _intifaceTab.Linear((uint)(e.Duration * 1000), (double)(e.Position / 100.0));

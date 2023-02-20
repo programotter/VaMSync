@@ -6,7 +6,9 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using Buttplug;
+using Buttplug.Core;
+using Buttplug.Client;
+using Buttplug.Client.Connectors.WebsocketConnector;
 
 namespace VaMLaunchGUI
 {
@@ -110,11 +112,12 @@ namespace VaMLaunchGUI
             {
                 if (aAddress == null)
                 {
-                    await client.ConnectAsync(new ButtplugEmbeddedConnectorOptions());
+                    var connector = new ButtplugWebsocketConnector(new Uri("ws://127.0.0.1:12345"));
+                    await client.ConnectAsync(connector);
                 }
                 else
                 {
-                    var connector = new ButtplugWebsocketConnectorOptions(new Uri(aAddress));
+                    var connector = new ButtplugWebsocketConnector(new Uri(aAddress));
                     await client.ConnectAsync(connector);
                 }
 
@@ -133,7 +136,7 @@ namespace VaMLaunchGUI
                     }
                 });
             }
-            catch (ButtplugConnectorException ex)
+            catch (ButtplugClientConnectorException ex)
             {
                 Debug.WriteLine("Connection failed.");
                 // If the exception was thrown after connect, make sure we disconnect.
@@ -237,8 +240,7 @@ namespace VaMLaunchGUI
                 _disconnectButton.Visibility = Visibility.Collapsed;
                 _connectStatus.Text = "Disconnected";
                 DevicesList.Clear();
-                _client.Dispose();
-                _client = null;
+                DisposeClient();
             });
         }
 
@@ -277,9 +279,19 @@ namespace VaMLaunchGUI
         {
             foreach (var deviceItem in DevicesList)
             {
-                if (deviceItem.IsChecked && deviceItem.Device.AllowedMessages.ContainsKey(ServerMessage.Types.MessageAttributeType.VibrateCmd))
+                if (deviceItem.IsChecked && deviceItem.Device.VibrateAttributes.Count > 0)
                 {
-                    await deviceItem.Device.SendVibrateCmd(aSpeed);
+                    await deviceItem.Device.VibrateAsync(aSpeed);
+                }
+            }
+        }
+        public async Task Rotate(double aSpeed)
+        {
+            foreach (var deviceItem in DevicesList)
+            {
+                if (deviceItem.IsChecked && deviceItem.Device.RotateAttributes.Count > 0)
+                {
+                    await deviceItem.Device.RotateAsync(aSpeed, new Random().Next(2) == 1);
                 }
             }
         }
@@ -289,9 +301,9 @@ namespace VaMLaunchGUI
             foreach (var deviceItem in DevicesList)
             {
                 // If the duration is 0, just drop the message.
-                if (deviceItem.IsChecked && deviceItem.Device.AllowedMessages.ContainsKey(ServerMessage.Types.MessageAttributeType.LinearCmd) && aDuration > 0)
+                if (deviceItem.IsChecked && deviceItem.Device.LinearAttributes.Count > 0 && aDuration > 0)
                 {
-                    await deviceItem.Device.SendLinearCmd(aDuration, aPosition);
+                    await deviceItem.Device.LinearAsync(aDuration, aPosition);
                 }
             }
         }
@@ -299,6 +311,11 @@ namespace VaMLaunchGUI
         public async Task StopVibration()
         {
             await Vibrate(0);
+        }
+
+        public async Task StopRotation()
+        {
+            await Rotate(0);
         }
 
         private void DisposeClient()
